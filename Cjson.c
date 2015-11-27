@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 
-static size_t INIT_CAP = 10;
+static size_t INIT_CAP = 50;
 
 enum CJSON_TYPE {
     INT,
@@ -202,26 +202,19 @@ bool addInt(Cjson CjsonObj, char *key, int value) {
     insertValue(CjsonObj, newHash, newPair);
 }
 
-int getInt(Cjson CjsonObj, char *key) {
+static inline void *getValue(Cjson CjsonObj, char *key) {
     size_t capacity = CjsonObj->capacity;
     size_t getHash = hash(capacity, key);
-    fprintf(stderr, "Got hash: %lu\n", getHash);
     struct keyValPair **content = CjsonObj->keyValPairs;
 
-    int tries = 1;
     while (content[getHash] == NULL ||
-        (strcmp(content[getHash]->key, key) != 0)) {
-        /*
-        if (content[getHash] != NULL) {
-            fprintf(stderr, "Current search: %s\n", content[getHash]->key);
-        } else {
-            fprintf(stderr, "Hash at %lu was null\n", getHash);
-        }
-        */
+      (strcmp(content[getHash]->key, key) != 0)) {
         getHash = (getHash + 1) % capacity;
-        tries++;
     }
 
-    fprintf(stderr, "Searching for %s took %d tries\n", key, tries);
-    return *((int *)content[getHash]->value);
+    return content[getHash]->value;
+}
+
+int getInt(Cjson CjsonObj, char *key) {
+    return *((int *)getValue(CjsonObj, key));
 }
