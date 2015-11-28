@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 
+Cjson copyCjsonObject(Cjson CjsonObj);
+
 static size_t INIT_CAP = 50;
 
 struct keyValPair {
@@ -33,31 +35,15 @@ Cjson createNewCjsonObject(void) {
     return newCjson;
 }
 
-Cjson copyCjsonObject(Cjson CjsonObj) {
-    Cjson newCjsonObj = createNewCjsonObject();
-    struct keyValPair **values = CjsonObj->keyValPairs;
-
-    size_t capacity = CjsonObj->capacity;
-    size_t i;
-    for (i = 0; i < capacity; i++) {
-        struct keyValPair *curPair = values[i];
-        if (curPair != NULL) {
-            ensureCapacity(newCjsonObj);
-            size_t newCapacity = newCjsonObj->capacity;
-            size_t hash = hash(newCapacity, curPair->key);
-            struct keyValPair *newPair = copyKeyValPair(curPair);
-            insertKeyValPair(newCjsonObj, hash, newPair);
-        }
-    }
-
-    return newCjsonObj;
-}
-
 static void freeKeyValPair(struct keyValPair *pair) {
     if (pair == NULL) return;
 
     free(pair->key);
-    free(pair->value);
+    if (pair->type == CJSON_OBJ) {
+        destroyCjsonObject(pair->value);
+    } else {
+        free(pair->value);
+    }
     free(pair);
 }
 
@@ -131,7 +117,7 @@ static struct keyValPair *copyKeyValPair(struct keyValPair *curPair) {
             *((float *)newPair->value) = *((float *)curPair->value);
             break;
         case CJSON_OBJ:
-            newPair->value = copyCJsonObject(curPair->value);
+            newPair->value = copyCjsonObject(curPair->value);
             break;
         default:
             newPair->value = NULL;
@@ -237,6 +223,10 @@ bool addFloat(Cjson CjsonObj, char *key, float value) {
     return true;
 }
 
+bool addCjson(Cjson CjsonObj, char *key, Cjson value) {
+    addValue(CjsonObj, key, value, CJSON_OBJ);
+}
+
 static inline void *getValue(Cjson CjsonObj, char *key) {
     size_t capacity = CjsonObj->capacity;
     size_t getHash = hash(capacity, key);
@@ -265,6 +255,10 @@ char *getString(Cjson CjsonObj, char *key) {
 
 float getFloat(Cjson CjsonObj, char *key) {
     return *((float *)getValue(CjsonObj, key));
+}
+
+Cjson getCjson(Cjson CjsonObj, char *key) {
+    return (Cjson)getValue(CjsonObj, key);
 }
 
 bool doesKeyExist(Cjson CjsonObj, char *key) {
@@ -304,4 +298,24 @@ Cjson createInitCjsonObject(char **keys, void **values, enum CJSON_TYPE *types, 
     }
 
     return newCjson;
+}
+
+Cjson copyCjsonObject(Cjson CjsonObj) {
+    Cjson newCjsonObj = createNewCjsonObject();
+    struct keyValPair **values = CjsonObj->keyValPairs;
+
+    size_t capacity = CjsonObj->capacity;
+    size_t i;
+    for (i = 0; i < capacity; i++) {
+        struct keyValPair *curPair = values[i];
+        if (curPair != NULL) {
+            ensureCapacity(newCjsonObj);
+            size_t newCapacity = newCjsonObj->capacity;
+            size_t newHash = hash(newCapacity, curPair->key);
+            struct keyValPair *newPair = copyKeyValPair(curPair);
+            insertKeyValPair(newCjsonObj, newHash, newPair);
+        }
+    }
+
+    return newCjsonObj;
 }

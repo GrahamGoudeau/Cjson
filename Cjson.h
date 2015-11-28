@@ -15,7 +15,6 @@ enum CJSON_TYPE {
     CJSON_OBJ
 };
 
-//Cjson createCjsonObject(size_t num_key_val_pairs, char **keys, void **values);
 Cjson createNewCjsonObject(void);
 
 Cjson createInitCjsonObject(char **keys, void **values, enum CJSON_TYPE *types, size_t numEntries);
