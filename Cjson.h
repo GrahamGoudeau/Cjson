@@ -8,8 +8,19 @@ struct Cjson;
 
 typedef struct Cjson *Cjson;
 
+enum CJSON_TYPE {
+    CJSON_INT,
+    CJSON_STRING,
+    CJSON_FLOAT,
+    CJSON_OBJ
+};
+
 //Cjson createCjsonObject(size_t num_key_val_pairs, char **keys, void **values);
 Cjson createCjsonObject(void);
+
+bool doesKeyExist(Cjson CjsonObj, char *key);
+
+bool doesTypeMatch(Cjson CjsonObj, char *key, enum CJSON_TYPE type);
 
 bool addInt(Cjson CjsonObj, char *key, int value);
 

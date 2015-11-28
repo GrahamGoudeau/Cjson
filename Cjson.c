@@ -6,13 +6,6 @@
 
 static size_t INIT_CAP = 50;
 
-enum CJSON_TYPE {
-    INT,
-    STRING,
-    FLOAT,
-    CJSON
-};
-
 struct keyValPair {
     char *key;
     void *value;
@@ -104,18 +97,18 @@ static struct keyValPair *copyKeyValPair(struct keyValPair *curPair) {
     newPair->type = curPair->type;
 
     switch (newPair->type) {
-        case INT:
+        case CJSON_INT:
             newPair->value = malloc(sizeof(int));
             *((int *)newPair->value) = *((int *)curPair->value);
             break;
-        case STRING:
+        case CJSON_STRING:
             newPair->value = copy_string(curPair->value);
             break;
-        case FLOAT:
+        case CJSON_FLOAT:
             newPair->value = malloc(sizeof(float));
             *((float *)newPair->value) = *((float *)curPair->value);
             break;
-        case CJSON:
+        case CJSON_OBJ:
             fprintf(stderr, "CJSON COPYING NOT IMPLEMENTED\n");
             break;
         default:
@@ -203,14 +196,23 @@ bool addInt(Cjson CjsonObj, char *key, int value) {
     int *newValue = malloc(sizeof(int));
     *newValue = value;
 
-    addValue(CjsonObj, key, newValue, INT);
+    addValue(CjsonObj, key, newValue, CJSON_INT);
     return true;
 }
 
 bool addString(Cjson CjsonObj, char *key, char *value) {
     char *newValue = copy_string(value);
 
-    addValue(CjsonObj, key, newValue, STRING);
+    addValue(CjsonObj, key, newValue, CJSON_STRING);
+    return true;
+}
+
+bool addFloat(Cjson CjsonObj, char *key, float value) {
+    float *newValue = malloc(sizeof(float));
+    *newValue = value;
+
+    addValue(CjsonObj, key, newValue, CJSON_FLOAT);
+    return true;
 }
 
 static inline void *getValue(Cjson CjsonObj, char *key) {
@@ -218,9 +220,14 @@ static inline void *getValue(Cjson CjsonObj, char *key) {
     size_t getHash = hash(capacity, key);
     struct keyValPair **content = CjsonObj->keyValPairs;
 
+    size_t initialHash = getHash;
+
     while (content[getHash] == NULL ||
       (strcmp(content[getHash]->key, key) != 0)) {
         getHash = (getHash + 1) % capacity;
+
+        // if we have inspected all hashes and not found, NULL
+        if (getHash == initialHash) return NULL;
     }
 
     return content[getHash]->value;
@@ -232,4 +239,27 @@ int getInt(Cjson CjsonObj, char *key) {
 
 char *getString(Cjson CjsonObj, char *key) {
     return (char *)getValue(CjsonObj, key);
+}
+
+float getFloat(Cjson CjsonObj, char *key) {
+    return *((float *)getValue(CjsonObj, key));
+}
+
+bool doesKeyExist(Cjson CjsonObj, char *key) {
+    if (getValue(CjsonObj, key) == NULL) return false;
+
+    return true;
+}
+
+bool doesTypeMatch(Cjson CjsonObj, char *key, enum CJSON_TYPE type) {
+    if (!doesKeyExist(CjsonObj, key)) return false;
+
+    size_t checkHash = hash(CjsonObj->capacity, key);
+
+    while (CjsonObj->keyValPairs[checkHash] == NULL ||
+      strcmp(CjsonObj->keyValPairs[checkHash]->key, key) != 0) {
+        checkHash = (checkHash + 1) % CjsonObj->capacity;
+      }
+    struct keyValPair *pair = CjsonObj->keyValPairs[checkHash];
+    return pair->type == type;
 }
