@@ -19,7 +19,7 @@ struct Cjson {
     struct keyValPair **keyValPairs;
 };
 
-Cjson createCjsonObject(void) {
+Cjson createNewCjsonObject(void) {
     Cjson newCjson = malloc(sizeof(struct Cjson));
     newCjson->capacity = INIT_CAP;
     newCjson->numKeys = 0;
@@ -33,6 +33,26 @@ Cjson createCjsonObject(void) {
     return newCjson;
 }
 
+Cjson copyCjsonObject(Cjson CjsonObj) {
+    Cjson newCjsonObj = createNewCjsonObject();
+    struct keyValPair **values = CjsonObj->keyValPairs;
+
+    size_t capacity = CjsonObj->capacity;
+    size_t i;
+    for (i = 0; i < capacity; i++) {
+        struct keyValPair *curPair = values[i];
+        if (curPair != NULL) {
+            ensureCapacity(newCjsonObj);
+            size_t newCapacity = newCjsonObj->capacity;
+            size_t hash = hash(newCapacity, curPair->key);
+            struct keyValPair *newPair = copyKeyValPair(curPair);
+            insertKeyValPair(newCjsonObj, hash, newPair);
+        }
+    }
+
+    return newCjsonObj;
+}
+
 static void freeKeyValPair(struct keyValPair *pair) {
     if (pair == NULL) return;
 
@@ -42,6 +62,8 @@ static void freeKeyValPair(struct keyValPair *pair) {
 }
 
 bool destroyCjsonObject(Cjson CjsonObj) {
+    if (CjsonObj == NULL) return true;
+
     size_t capacity = CjsonObj->capacity;
     size_t i;
     for (i = 0; i < capacity; i++) {
@@ -109,7 +131,7 @@ static struct keyValPair *copyKeyValPair(struct keyValPair *curPair) {
             *((float *)newPair->value) = *((float *)curPair->value);
             break;
         case CJSON_OBJ:
-            fprintf(stderr, "CJSON COPYING NOT IMPLEMENTED\n");
+            newPair->value = copyCJsonObject(curPair->value);
             break;
         default:
             newPair->value = NULL;
@@ -262,4 +284,24 @@ bool doesTypeMatch(Cjson CjsonObj, char *key, enum CJSON_TYPE type) {
       }
     struct keyValPair *pair = CjsonObj->keyValPairs[checkHash];
     return pair->type == type;
+}
+
+Cjson createInitCjsonObject(char **keys, void **values, enum CJSON_TYPE *types, size_t numEntries) {
+    Cjson newCjson = malloc(sizeof(struct Cjson));
+    newCjson->capacity = numEntries;
+    newCjson->numKeys = 0;
+    newCjson->keyValPairs = malloc(numEntries * sizeof(struct keyValPair *));
+
+    size_t kv;
+    for (kv = 0; kv < numEntries; kv++) {
+        newCjson->keyValPairs[kv] = NULL;
+    }
+
+
+    size_t i;
+    for (i = 0; i < numEntries; i++) {
+        addValue(newCjson, keys[i], values[i], types[i]);
+    }
+
+    return newCjson;
 }

@@ -16,7 +16,9 @@ enum CJSON_TYPE {
 };
 
 //Cjson createCjsonObject(size_t num_key_val_pairs, char **keys, void **values);
-Cjson createCjsonObject(void);
+Cjson createNewCjsonObject(void);
+
+Cjson createInitCjsonObject(char **keys, void **values, enum CJSON_TYPE *types, size_t numEntries);
 
 bool doesKeyExist(Cjson CjsonObj, char *key);
 
