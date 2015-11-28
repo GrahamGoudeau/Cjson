@@ -109,8 +109,7 @@ static struct keyValPair *copyKeyValPair(struct keyValPair *curPair) {
             *((int *)newPair->value) = *((int *)curPair->value);
             break;
         case STRING:
-            newPair->value = malloc(sizeof(char *));
-            *((char **)newPair->value) = *((char **)curPair->value);
+            newPair->value = copy_string(curPair->value);
             break;
         case FLOAT:
             newPair->value = malloc(sizeof(float));
@@ -178,7 +177,7 @@ static void ensureCapacity(Cjson CjsonObj) {
     }
 }
 
-static void insertValue(Cjson CjsonObj, size_t hash, void *addValue) {
+static void insertKeyValPair(Cjson CjsonObj, size_t hash, void *addValue) {
     size_t capacity = CjsonObj->capacity;
     while (CjsonObj->keyValPairs[hash] != NULL) {
         hash = (hash + 1) % capacity;
@@ -189,17 +188,29 @@ static void insertValue(Cjson CjsonObj, size_t hash, void *addValue) {
     CjsonObj->numKeys += 1;
 }
 
-bool addInt(Cjson CjsonObj, char *key, int value) {
+static inline void addValue(Cjson CjsonObj, char *key, void *value, enum CJSON_TYPE type) {
     ensureCapacity(CjsonObj);
-    int *addValue = malloc(sizeof(int));
-    *addValue = value;
 
     char *addKey = copy_string(key);
 
     size_t newHash = hash(CjsonObj->capacity, key);
-    struct keyValPair *newPair = createKeyValPair(addKey, addValue, INT);
+    struct keyValPair *newPair = createKeyValPair(addKey, value, type);
 
-    insertValue(CjsonObj, newHash, newPair);
+    insertKeyValPair(CjsonObj, newHash, newPair);
+}
+
+bool addInt(Cjson CjsonObj, char *key, int value) {
+    int *newValue = malloc(sizeof(int));
+    *newValue = value;
+
+    addValue(CjsonObj, key, newValue, INT);
+    return true;
+}
+
+bool addString(Cjson CjsonObj, char *key, char *value) {
+    char *newValue = copy_string(value);
+
+    addValue(CjsonObj, key, newValue, STRING);
 }
 
 static inline void *getValue(Cjson CjsonObj, char *key) {
@@ -217,4 +228,8 @@ static inline void *getValue(Cjson CjsonObj, char *key) {
 
 int getInt(Cjson CjsonObj, char *key) {
     return *((int *)getValue(CjsonObj, key));
+}
+
+char *getString(Cjson CjsonObj, char *key) {
+    return (char *)getValue(CjsonObj, key);
 }
