@@ -1,9 +1,6 @@
 #include <string.h>
 #include "Cjson.h"
 
-
-#include <stdio.h>
-
 Cjson copyCjsonObject(Cjson CjsonObj);
 
 static size_t INIT_CAP = 50;
@@ -225,6 +222,7 @@ bool addFloat(Cjson CjsonObj, char *key, float value) {
 
 bool addCjson(Cjson CjsonObj, char *key, Cjson value) {
     addValue(CjsonObj, key, value, CJSON_OBJ);
+    return true;
 }
 
 static inline void *getValue(Cjson CjsonObj, char *key) {

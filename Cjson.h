@@ -19,7 +19,7 @@ Cjson createNewCjsonObject(void);
 
 Cjson createInitCjsonObject(char **keys, void **values, enum CJSON_TYPE *types, size_t numEntries);
 
-Cjson copyCJsonObject(CJson CjsonObj);
+Cjson copyCjsonObject(Cjson CjsonObj);
 
 bool doesKeyExist(Cjson CjsonObj, char *key);
 
